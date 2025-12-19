@@ -88,6 +88,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
     }
 
     private func handleScreenChange() {
+        NSScreen.refreshBuiltinNotchSize()
         _ = windowManager?.setupNotchWindow()
     }
 

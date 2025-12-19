@@ -20,6 +20,13 @@ struct NotchMenuView: View {
     @ObservedObject private var soundSelector = SoundSelector.shared
     @State private var hooksInstalled: Bool = false
     @State private var launchAtLogin: Bool = false
+    @State private var notchScale: Double = AppSettings.externalMonitorNotchScale
+
+    /// Whether the currently selected screen is an external monitor (no physical notch)
+    private var isExternalMonitor: Bool {
+        guard let selectedScreen = screenSelector.selectedScreen else { return false }
+        return !selectedScreen.hasPhysicalNotch
+    }
 
     var body: some View {
         VStack(spacing: 4) {
@@ -37,6 +44,12 @@ struct NotchMenuView: View {
 
             // Appearance settings
             ScreenPickerRow(screenSelector: screenSelector)
+
+            // Notch size slider - only show for external monitors
+            if isExternalMonitor {
+                NotchSizeRow(scale: $notchScale)
+            }
+
             SoundPickerRow(soundSelector: soundSelector)
 
             Divider()
@@ -518,6 +531,75 @@ struct MenuToggleRow: View {
         }
         .buttonStyle(.plain)
         .onHover { isHovered = $0 }
+    }
+
+    private var textColor: Color {
+        .white.opacity(isHovered ? 1.0 : 0.7)
+    }
+}
+
+// MARK: - Notch Size Row
+
+struct NotchSizeRow: View {
+    @Binding var scale: Double
+    @State private var isHovered = false
+    @State private var isExpanded = false
+    @State private var applyTask: DispatchWorkItem?
+
+    var body: some View {
+        VStack(spacing: 0) {
+            Button {
+                withAnimation(.easeInOut(duration: 0.2)) {
+                    isExpanded.toggle()
+                }
+            } label: {
+                HStack(spacing: 10) {
+                    Image(systemName: "arrow.up.left.and.arrow.down.right")
+                        .font(.system(size: 12))
+                        .foregroundColor(textColor)
+                        .frame(width: 16)
+
+                    Text("Notch Size")
+                        .font(.system(size: 13, weight: .medium))
+                        .foregroundColor(textColor)
+
+                    Spacer()
+
+                    Text("\(Int(scale * 100))%")
+                        .font(.system(size: 11))
+                        .foregroundColor(.white.opacity(0.4))
+
+                    Image(systemName: isExpanded ? "chevron.up" : "chevron.down")
+                        .font(.system(size: 10))
+                        .foregroundColor(.white.opacity(0.4))
+                }
+                .padding(.horizontal, 12)
+                .padding(.vertical, 10)
+                .background(
+                    RoundedRectangle(cornerRadius: 8)
+                        .fill(isHovered ? Color.white.opacity(0.08) : Color.clear)
+                )
+            }
+            .buttonStyle(.plain)
+            .onHover { isHovered = $0 }
+
+            if isExpanded {
+                Slider(value: $scale, in: 0.5...1.0, step: 0.05)
+                    .tint(TerminalColors.green)
+                    .padding(.horizontal, 12)
+                    .padding(.top, 8)
+                    .padding(.bottom, 4)
+                    .onChange(of: scale) { _, newValue in
+                        applyTask?.cancel()
+                        let task = DispatchWorkItem {
+                            AppSettings.externalMonitorNotchScale = newValue
+                            NotificationCenter.default.post(name: NSApplication.didChangeScreenParametersNotification, object: nil)
+                        }
+                        applyTask = task
+                        DispatchQueue.main.asyncAfter(deadline: .now() + 0.5, execute: task)
+                    }
+            }
+        }
     }
 
     private var textColor: Color {

@@ -38,6 +38,7 @@ enum AppSettings {
 
     private enum Keys {
         static let notificationSound = "notificationSound"
+        static let externalMonitorNotchScale = "externalMonitorNotchScale"
     }
 
     // MARK: - Notification Sound
@@ -53,6 +54,19 @@ enum AppSettings {
         }
         set {
             defaults.set(newValue.rawValue, forKey: Keys.notificationSound)
+        }
+    }
+
+    // MARK: - External Monitor Notch Scale
+
+    /// Scale factor for notch size on external monitors (0.5 to 1.0)
+    static var externalMonitorNotchScale: Double {
+        get {
+            let value = defaults.double(forKey: Keys.externalMonitorNotchScale)
+            return value > 0 ? value : 0.75 // Default to 75%
+        }
+        set {
+            defaults.set(newValue, forKey: Keys.externalMonitorNotchScale)
         }
     }
 }
