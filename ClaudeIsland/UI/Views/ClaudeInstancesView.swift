@@ -49,8 +49,8 @@ struct ClaudeInstancesView: View {
             }
             // Sort by last user message date (more recent first)
             // Fall back to lastActivity if no user messages yet
-            let dateA = a.lastUserMessageDate ?? a.lastActivity
-            let dateB = b.lastUserMessageDate ?? b.lastActivity
+            let dateA = a.lastUserPromptAt ?? a.lastUserMessageDate ?? a.lastActivity
+            let dateB = b.lastUserPromptAt ?? b.lastUserMessageDate ?? b.lastActivity
             return dateA > dateB
         }
     }

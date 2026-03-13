@@ -135,6 +135,10 @@ actor SessionStore {
         }
         session.lastActivity = Date()
 
+        if event.event == "UserPromptSubmit" {
+            session.lastUserPromptAt = Date()
+        }
+
         if event.status == "ended" {
             sessions.removeValue(forKey: sessionId)
             cancelPendingSync(sessionId: sessionId)

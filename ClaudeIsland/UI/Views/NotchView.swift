@@ -26,6 +26,7 @@ struct NotchView: View {
     @State private var isVisible: Bool = false
     @State private var isHovering: Bool = false
     @State private var isBouncing: Bool = false
+    @State private var hasUnreadCompletions: Bool = false
 
     @Namespace private var activityNamespace
 
@@ -86,6 +87,10 @@ struct NotchView: View {
 
         // Waiting for input just shows checkmark on right, no extra left indicator
         if hasWaitingForInput {
+            return 2 * max(0, closedNotchSize.height - 12) + 20
+        }
+
+        if hasUnreadCompletions {
             return 2 * max(0, closedNotchSize.height - 12) + 20
         }
 
@@ -171,6 +176,7 @@ struct NotchView: View {
                     .animation(.smooth, value: activityCoordinator.expandingActivity)
                     .animation(.smooth, value: hasPendingPermission)
                     .animation(.smooth, value: hasWaitingForInput)
+                    .animation(.smooth, value: hasUnreadCompletions)
                     .animation(.spring(response: 0.3, dampingFraction: 0.5), value: isBouncing)
                     .contentShape(Rectangle())
                     .onHover { hovering in
@@ -184,6 +190,7 @@ struct NotchView: View {
                         }
                     }
             }
+
         }
         .opacity(isVisible ? 1 : 0)
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
@@ -217,7 +224,7 @@ struct NotchView: View {
 
     /// Whether to show the expanded closed state (processing, pending permission, or waiting for input)
     private var showClosedActivity: Bool {
-        isProcessing || hasPendingPermission || hasWaitingForInput
+        isProcessing || hasPendingPermission || hasWaitingForInput || hasUnreadCompletions
     }
 
     @ViewBuilder
@@ -252,7 +259,7 @@ struct NotchView: View {
             if showClosedActivity {
                 HStack(spacing: 4) {
                     ClaudeCrabIcon(size: 14, animateLegs: isProcessing)
-                        .matchedGeometryEffect(id: "crab", in: activityNamespace, isSource: showClosedActivity)
+                    .matchedGeometryEffect(id: "crab", in: activityNamespace, isSource: showClosedActivity)
 
                     // Permission indicator only (amber) - waiting for input shows checkmark on right
                     if hasPendingPermission {
@@ -283,11 +290,15 @@ struct NotchView: View {
             // Right side - spinner when processing/pending, checkmark when waiting for input
             if showClosedActivity {
                 if isProcessing || hasPendingPermission {
-                    ProcessingSpinner()
+                    ProcessingSpinner(color: hasUnreadCompletions ? TerminalColors.green : Color(red: 0.85, green: 0.47, blue: 0.34))
                         .matchedGeometryEffect(id: "spinner", in: activityNamespace, isSource: showClosedActivity)
                         .frame(width: viewModel.status == .opened ? 20 : sideWidth)
                 } else if hasWaitingForInput {
                     // Checkmark for waiting-for-input on the right side
+                    ReadyForInputIndicatorIcon(size: 14, color: TerminalColors.green)
+                        .matchedGeometryEffect(id: "spinner", in: activityNamespace, isSource: showClosedActivity)
+                        .frame(width: viewModel.status == .opened ? 20 : sideWidth)
+                } else if hasUnreadCompletions {
                     ReadyForInputIndicatorIcon(size: 14, color: TerminalColors.green)
                         .matchedGeometryEffect(id: "spinner", in: activityNamespace, isSource: showClosedActivity)
                         .frame(width: viewModel.status == .opened ? 20 : sideWidth)
@@ -390,7 +401,7 @@ struct NotchView: View {
             // Don't hide on non-notched devices - users need a visible target
             if viewModel.status == .closed && viewModel.hasPhysicalNotch {
                 DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
-                    if !isAnyProcessing && !hasPendingPermission && !hasWaitingForInput && viewModel.status == .closed {
+                    if !isAnyProcessing && !hasPendingPermission && !hasWaitingForInput && !hasUnreadCompletions && viewModel.status == .closed {
                         isVisible = false
                     }
                 }
@@ -402,6 +413,7 @@ struct NotchView: View {
         switch newStatus {
         case .opened, .popping:
             isVisible = true
+            hasUnreadCompletions = false
             // Clear waiting-for-input timestamps only when manually opened (user acknowledged)
             if viewModel.openReason == .click || viewModel.openReason == .hover {
                 waitingForInputTimestamps.removeAll()
@@ -410,7 +422,7 @@ struct NotchView: View {
             // Don't hide on non-notched devices - users need a visible target
             guard viewModel.hasPhysicalNotch else { return }
             DispatchQueue.main.asyncAfter(deadline: .now() + 0.35) {
-                if viewModel.status == .closed && !isAnyProcessing && !hasPendingPermission && !hasWaitingForInput && !activityCoordinator.expandingActivity.show {
+                if viewModel.status == .closed && !isAnyProcessing && !hasPendingPermission && !hasWaitingForInput && !hasUnreadCompletions && !activityCoordinator.expandingActivity.show {
                     isVisible = false
                 }
             }
@@ -465,6 +477,9 @@ struct NotchView: View {
                     }
                 }
             }
+
+            hasUnreadCompletions = true
+            isVisible = true
 
             // Trigger bounce animation to get user's attention
             DispatchQueue.main.async {

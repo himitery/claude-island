@@ -56,6 +56,7 @@ struct SessionState: Equatable, Identifiable, Sendable {
     // MARK: - Timestamps
 
     var lastActivity: Date
+    var lastUserPromptAt: Date? = nil
     var createdAt: Date
 
     // MARK: - Identifiable

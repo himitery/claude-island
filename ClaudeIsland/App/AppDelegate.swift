@@ -3,6 +3,7 @@ import IOKit
 import Mixpanel
 import Sparkle
 import SwiftUI
+import UserNotifications
 
 class AppDelegate: NSObject, NSApplicationDelegate {
     private var windowManager: WindowManager?
@@ -68,6 +69,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         Mixpanel.mainInstance().flush()
 
         HookInstaller.installIfNeeded()
+        NotificationManager.shared.requestAuthorization()
         NSApplication.shared.setActivationPolicy(.accessory)
 
         windowManager = WindowManager()

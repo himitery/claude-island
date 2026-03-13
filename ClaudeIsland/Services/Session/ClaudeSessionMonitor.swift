@@ -54,6 +54,9 @@ class ClaudeSessionMonitor: ObservableObject {
 
                 if event.event == "Stop" {
                     HookSocketServer.shared.cancelPendingPermissions(sessionId: event.sessionId)
+                    Task { @MainActor in
+                        NotificationManager.shared.notifyStop(cwd: event.cwd)
+                    }
                 }
 
                 if event.event == "PostToolUse", let toolUseId = event.toolUseId {
