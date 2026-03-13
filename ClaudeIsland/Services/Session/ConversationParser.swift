@@ -16,6 +16,7 @@ struct ConversationInfo: Equatable {
     let lastToolName: String?  // Tool name if lastMessageRole is "tool"
     let firstUserMessage: String?  // Fallback title when no summary
     let lastUserMessageDate: Date?  // Timestamp of last user message (for stable sorting)
+    let lastUserMessage: String?  // Last user query text
 }
 
 actor ConversationParser {
@@ -79,7 +80,7 @@ actor ConversationParser {
         guard fileManager.fileExists(atPath: sessionFile),
               let attrs = try? fileManager.attributesOfItem(atPath: sessionFile),
               let modDate = attrs[.modificationDate] as? Date else {
-            return ConversationInfo(summary: nil, lastMessage: nil, lastMessageRole: nil, lastToolName: nil, firstUserMessage: nil, lastUserMessageDate: nil)
+            return ConversationInfo(summary: nil, lastMessage: nil, lastMessageRole: nil, lastToolName: nil, firstUserMessage: nil, lastUserMessageDate: nil, lastUserMessage: nil)
         }
 
         if let cached = cache[sessionFile], cached.modificationDate == modDate {
@@ -88,7 +89,7 @@ actor ConversationParser {
 
         guard let data = fileManager.contents(atPath: sessionFile),
               let content = String(data: data, encoding: .utf8) else {
-            return ConversationInfo(summary: nil, lastMessage: nil, lastMessageRole: nil, lastToolName: nil, firstUserMessage: nil, lastUserMessageDate: nil)
+            return ConversationInfo(summary: nil, lastMessage: nil, lastMessageRole: nil, lastToolName: nil, firstUserMessage: nil, lastUserMessageDate: nil, lastUserMessage: nil)
         }
 
         let info = parseContent(content)
@@ -107,6 +108,7 @@ actor ConversationParser {
         var lastToolName: String?
         var firstUserMessage: String?
         var lastUserMessageDate: Date?
+        var lastUserMessageText: String?
 
         let formatter = ISO8601DateFormatter()
         formatter.formatOptions = [.withInternetDateTime, .withFractionalSeconds]
@@ -180,6 +182,7 @@ actor ConversationParser {
                             if let timestampStr = json["timestamp"] as? String {
                                 lastUserMessageDate = formatter.date(from: timestampStr)
                             }
+                            lastUserMessageText = Self.truncateMessage(msgContent, maxLength: 80)
                             foundLastUserMessage = true
                         }
                     }
@@ -201,7 +204,8 @@ actor ConversationParser {
             lastMessageRole: lastMessageRole,
             lastToolName: lastToolName,
             firstUserMessage: firstUserMessage,
-            lastUserMessageDate: lastUserMessageDate
+            lastUserMessageDate: lastUserMessageDate,
+            lastUserMessage: lastUserMessageText
         )
     }
 

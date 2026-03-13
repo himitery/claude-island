@@ -153,14 +153,13 @@ struct InstanceRow: View {
 
             // Text content
             VStack(alignment: .leading, spacing: 2) {
-                Text(session.displayTitle)
+                Text(session.projectName)
                     .font(.system(size: 13, weight: .medium))
                     .foregroundColor(.white)
                     .lineLimit(1)
 
-                // Show tool call when waiting for approval, otherwise last activity
+                // Show tool call when waiting for approval, otherwise last user query
                 if isWaitingForApproval, let toolName = session.pendingToolName {
-                    // Show tool name in amber + input on same line
                     HStack(spacing: 4) {
                         Text(MCPToolFormatter.formatToolName(toolName))
                             .font(.system(size: 11, weight: .medium, design: .monospaced))
@@ -177,47 +176,8 @@ struct InstanceRow: View {
                                 .lineLimit(1)
                         }
                     }
-                } else if let role = session.lastMessageRole {
-                    switch role {
-                    case "tool":
-                        // Tool call - show tool name + input
-                        HStack(spacing: 4) {
-                            if let toolName = session.lastToolName {
-                                Text(MCPToolFormatter.formatToolName(toolName))
-                                    .font(.system(size: 11, weight: .medium, design: .monospaced))
-                                    .foregroundColor(.white.opacity(0.5))
-                            }
-                            if let input = session.lastMessage {
-                                Text(input)
-                                    .font(.system(size: 11))
-                                    .foregroundColor(.white.opacity(0.4))
-                                    .lineLimit(1)
-                            }
-                        }
-                    case "user":
-                        // User message - prefix with "You:"
-                        HStack(spacing: 4) {
-                            Text("You:")
-                                .font(.system(size: 11, weight: .medium))
-                                .foregroundColor(.white.opacity(0.5))
-                            if let msg = session.lastMessage {
-                                Text(msg)
-                                    .font(.system(size: 11))
-                                    .foregroundColor(.white.opacity(0.4))
-                                    .lineLimit(1)
-                            }
-                        }
-                    default:
-                        // Assistant message - just show text
-                        if let msg = session.lastMessage {
-                            Text(msg)
-                                .font(.system(size: 11))
-                                .foregroundColor(.white.opacity(0.4))
-                                .lineLimit(1)
-                        }
-                    }
-                } else if let lastMsg = session.lastMessage {
-                    Text(lastMsg)
+                } else if let query = session.lastUserMessage {
+                    Text(query)
                         .font(.system(size: 11))
                         .foregroundColor(.white.opacity(0.4))
                         .lineLimit(1)

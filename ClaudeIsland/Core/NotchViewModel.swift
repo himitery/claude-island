@@ -45,6 +45,7 @@ class NotchViewModel: ObservableObject {
     @Published var openReason: NotchOpenReason = .unknown
     @Published var contentType: NotchContentType = .instances
     @Published var isHovering: Bool = false
+    @Published var instanceCount: Int = 0
 
     // MARK: - Dependencies
 
@@ -77,9 +78,31 @@ class NotchViewModel: ObservableObject {
                 height: 420 + screenSelector.expandedPickerHeight + soundSelector.expandedPickerHeight
             )
         case .instances:
+            // Dynamic height based on instance count
+            // Layout breakdown:
+            // - Header row: ~34px
+            // - VStack padding: 8px (4 top + 4 bottom)
+            // - Each row: ~48px (46px content + 2px spacing)
+            // - Bottom chrome/padding: 12px
+            let headerHeight: CGFloat = 34
+            let listPadding: CGFloat = 8
+            let rowHeight: CGFloat = 48
+            let bottomPadding: CGFloat = 12
+            let emptyStateHeight: CGFloat = 60
+            let maxHeight: CGFloat = 400
+
+            let listContentHeight: CGFloat
+            if instanceCount == 0 {
+                listContentHeight = emptyStateHeight
+            } else {
+                listContentHeight = CGFloat(instanceCount) * rowHeight
+            }
+
+            let totalHeight = headerHeight + listPadding + listContentHeight + bottomPadding
+
             return CGSize(
                 width: min(screenRect.width * 0.4, 480),
-                height: 320
+                height: min(totalHeight, maxHeight)
             )
         }
     }
