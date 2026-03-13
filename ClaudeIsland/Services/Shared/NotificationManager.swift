@@ -20,7 +20,6 @@ final class NotificationManager {
         let content = UNMutableNotificationContent()
         content.title = projectName
         content.body = "Waiting for your input"
-        content.subtitle = "Claude Code"
         content.sound = .default
 
         let id = "stop-\(cwd.hashValue)-\(Int(Date().timeIntervalSince1970))"
