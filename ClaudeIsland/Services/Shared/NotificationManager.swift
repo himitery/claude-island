@@ -15,11 +15,11 @@ final class NotificationManager {
         }
     }
 
-    func notifyStop(cwd: String) {
+    func notifyStop(cwd: String, lastQuery: String? = nil) {
         let projectName = URL(fileURLWithPath: cwd).lastPathComponent
         let content = UNMutableNotificationContent()
         content.title = projectName
-        content.body = "Waiting for your input"
+        content.body = lastQuery ?? "Waiting for your input"
         content.sound = .default
 
         let id = "stop-\(cwd.hashValue)-\(Int(Date().timeIntervalSince1970))"

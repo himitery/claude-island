@@ -54,8 +54,10 @@ class ClaudeSessionMonitor: ObservableObject {
 
                 if event.event == "Stop" {
                     HookSocketServer.shared.cancelPendingPermissions(sessionId: event.sessionId)
+                    let sessionId = event.sessionId
                     Task { @MainActor in
-                        NotificationManager.shared.notifyStop(cwd: event.cwd)
+                        let lastQuery = self.instances.first(where: { $0.sessionId == sessionId })?.lastUserMessage
+                        NotificationManager.shared.notifyStop(cwd: event.cwd, lastQuery: lastQuery)
                     }
                 }
 

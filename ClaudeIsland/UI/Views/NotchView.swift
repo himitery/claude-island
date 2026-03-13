@@ -26,7 +26,7 @@ struct NotchView: View {
     @State private var isVisible: Bool = false
     @State private var isHovering: Bool = false
     @State private var isBouncing: Bool = false
-    @State private var hasUnreadCompletions: Bool = false
+    @State private var unreadCompletionIds: Set<String> = []
 
     @Namespace private var activityNamespace
 
@@ -176,7 +176,7 @@ struct NotchView: View {
                     .animation(.smooth, value: activityCoordinator.expandingActivity)
                     .animation(.smooth, value: hasPendingPermission)
                     .animation(.smooth, value: hasWaitingForInput)
-                    .animation(.smooth, value: hasUnreadCompletions)
+                    .animation(.smooth, value: unreadCompletionIds.isEmpty)
                     .animation(.spring(response: 0.3, dampingFraction: 0.5), value: isBouncing)
                     .contentShape(Rectangle())
                     .onHover { hovering in
@@ -213,6 +213,10 @@ struct NotchView: View {
             handleProcessingChange()
             handleWaitingForInputChange(instances)
             viewModel.instanceCount = instances.count
+            // Remove from unread completions if session started processing again
+            for session in instances where session.phase == .processing || session.phase == .compacting {
+                unreadCompletionIds.remove(session.stableId)
+            }
         }
     }
 
@@ -221,6 +225,8 @@ struct NotchView: View {
     private var isProcessing: Bool {
         activityCoordinator.expandingActivity.show && activityCoordinator.expandingActivity.type == .claude
     }
+
+    private var hasUnreadCompletions: Bool { !unreadCompletionIds.isEmpty }
 
     /// Whether to show the expanded closed state (processing, pending permission, or waiting for input)
     private var showClosedActivity: Bool {
@@ -413,7 +419,7 @@ struct NotchView: View {
         switch newStatus {
         case .opened, .popping:
             isVisible = true
-            hasUnreadCompletions = false
+            unreadCompletionIds.removeAll()
             // Clear waiting-for-input timestamps only when manually opened (user acknowledged)
             if viewModel.openReason == .click || viewModel.openReason == .hover {
                 waitingForInputTimestamps.removeAll()
@@ -478,7 +484,9 @@ struct NotchView: View {
                 }
             }
 
-            hasUnreadCompletions = true
+            for session in waitingForInputSessions where newWaitingIds.contains(session.stableId) {
+                unreadCompletionIds.insert(session.stableId)
+            }
             isVisible = true
 
             // Trigger bounce animation to get user's attention
